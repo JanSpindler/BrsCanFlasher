@@ -144,4 +144,70 @@ namespace vector
 		if (XL_SUCCESS != xlDeactivateChannel(m_Handle, m_ChannelMask))
 			throw new std::runtime_error("Failed to deactivate channel for port");
 	}
+
+	void Port::CanSetChannelMode(int tx, int txrq)
+	{
+		if(XL_SUCCESS != xlCanSetChannelMode(m_Handle, m_ChannelMask, tx, txrq))
+			throw new std::runtime_error("Failed to set can channel mode for port");
+	}
+
+	void Port::CanSetChannelOutput(uint8_t mode)
+	{
+		if (XL_SUCCESS != xlCanSetChannelOutput(m_Handle, m_ChannelMask, mode))
+			throw new std::runtime_error("Failed to set can channel output for port");
+	}
+
+	void Port::CanSetReceiveMode(uint8_t errorFrame, uint8_t chipState)
+	{
+		if (XL_SUCCESS != xlCanSetReceiveMode(m_Handle, errorFrame, chipState))
+			throw new std::runtime_error("Failed to set can receive mode for port");
+	}
+
+	void Port::CanSetChannelTransceiver(int type, int lineMode, int resNet)
+	{
+		if (XL_SUCCESS != xlCanSetChannelTransceiver(m_Handle, m_ChannelMask, type, lineMode, resNet))
+			throw new std::runtime_error("Failed to set can channel transceiver for port");
+	}
+
+	void Port::CanSetChannelParams(XLchipParams* chipParams)
+	{
+		if (XL_SUCCESS != xlCanSetChannelParams(m_Handle, m_ChannelMask, chipParams))
+			throw new std::runtime_error("Failed to set can channel params for port");
+	}
+
+	void Port::CanSetChannelParamsC200(uint8_t btr0, uint8_t btr1)
+	{
+		if (XL_SUCCESS != xlCanSetChannelParamsC200(m_Handle, m_ChannelMask, btr0, btr1))
+			throw new std::runtime_error("Failed to set can channel params C200 for port");
+	}
+
+	void Port::CanSetChannelBitrate(uint64_t bitrate)
+	{
+		if (XL_SUCCESS != xlCanSetChannelBitrate(m_Handle, m_ChannelMask, bitrate))
+			throw new std::runtime_error("Failed to set bitrate for port");
+	}
+
+	void Port::CanSetChannelAcceptance(uint64_t code, uint64_t mask, uint32_t idRange)
+	{
+		if (XL_SUCCESS != xlCanSetChannelAcceptance(m_Handle, m_ChannelMask, code, mask, idRange))
+			throw new std::runtime_error("Failed to set channel acceptance for port");
+	}
+
+	void Port::CanRequestChipState()
+	{
+		if (XL_SUCCESS != xlCanRequestChipState(m_Handle, m_ChannelMask))
+			throw new std::runtime_error("Failed to request chip state for port");
+	}
+
+	void Port::CanTransmit(uint32_t& eventCount, void* events)
+	{
+		if (XL_SUCCESS != xlCanTransmit(m_Handle, m_ChannelMask, &eventCount, events))
+			throw new std::runtime_error("Failed to transmit can for port");
+	}
+
+	void Port::CanFlushTransmitQueue()
+	{
+		if (XL_SUCCESS != xlCanFlushTransmitQueue(m_Handle, m_ChannelMask))
+			throw new std::runtime_error("Failed to flush can transmit queue");
+	}
 }

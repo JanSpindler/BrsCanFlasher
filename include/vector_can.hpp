@@ -50,6 +50,18 @@ namespace vector
 		void GenSyncPulse();
 		void DeactivateChannel();
 
+		void CanSetChannelMode(int tx, int txrq);
+		void CanSetChannelOutput(uint8_t mode);
+		void CanSetReceiveMode(uint8_t errorFrame, uint8_t chipState);
+		void CanSetChannelTransceiver(int type, int lineMode, int resNet);
+		void CanSetChannelParams(XLchipParams* chipParams);
+		void CanSetChannelParamsC200(uint8_t btr0, uint8_t btr1);
+		void CanSetChannelBitrate(uint64_t bitrate);
+		void CanSetChannelAcceptance(uint64_t code, uint64_t mask, uint32_t idRange);
+		void CanRequestChipState();
+		void CanTransmit(uint32_t& eventCount, void* events);
+		void CanFlushTransmitQueue();
+
 	private:
 		XLportHandle m_Handle;
 		XLaccess m_ChannelMask;
