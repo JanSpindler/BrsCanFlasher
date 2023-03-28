@@ -6,3 +6,6 @@ Release
 x64
 cmake_install.cmake
 CMakeCache.txt
+*.sln
+*.vcxprog
+*.vcxproj.filters
