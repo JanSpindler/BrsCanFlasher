@@ -1,0 +1,8 @@
+.vs
+BrsCanFlasher.dir
+CMakeFiles
+Debug
+Release
+x64
+cmake_install.cmake
+CMakeCache.txt
