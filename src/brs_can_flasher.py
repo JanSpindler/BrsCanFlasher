@@ -7,12 +7,26 @@ import threading
 
 def flash_over_can(abort_event: threading.Event) -> None:
     print('Flashing started')
+
+    bus = can.Bus(channel=0, bitrate=1_000_000, interface='vector')
+
+    tx_msg = can.Message(
+        arbitration_id=0x100, 
+        data=[0, 25, 0, 1, 3, 1, 4, 1], 
+        is_extended_id=False,
+        is_rx=False
+    )
+
     for i in range(32):
         if abort_event.is_set():
             print('Flashing has been aborted')
             return
+    
+        bus.send(tx_msg)
+
         print(i)
         time.sleep(1)
+    
     print('Flashing ended')
 
 
@@ -43,6 +57,7 @@ def main() -> None:
     window = tk.Tk()
     window.resizable(False, False)
     window.geometry('300x150')
+    window.title('BrsCanFlasher')
 
     # Controller menu
     controllers = ['AMC', 'MBC', 'TMC']
