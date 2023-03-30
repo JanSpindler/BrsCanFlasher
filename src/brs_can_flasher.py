@@ -5,8 +5,16 @@ from tkinter import filedialog as fd
 import threading
 
 
-def flash_over_can(abort_event: threading.Event) -> None:
+def flash_over_can(
+    abort_event: threading.Event,
+    file_name: str
+) -> None:
     print('Flashing started')
+
+    flash_file = open(file_name, 'rb')
+    flash_content = flash_file.read()
+    print(len(flash_content))
+    flash_file.close()
 
     bus = can.Bus(channel=0, bitrate=1_000_000, interface='vector')
 
@@ -72,15 +80,18 @@ def main() -> None:
 
     # Flash button
     abort_event = threading.Event()
-    flash_thread = threading.Thread(
-            target=flash_over_can, 
-            args=(abort_event,))
 
     def on_flash_clicked() -> None:
         print('Clicked flash button')
-        fileName = fd.askopenfilename()
-        print(fileName)
+
+        file_name = fd.askopenfilename()
+        
+        print(file_name)
         print(ctrlVar.get())
+
+        flash_thread = threading.Thread(
+            target=flash_over_can, 
+            args=(abort_event, file_name,))
         flash_thread.start()
 
     flashBtn = tk.Button(
@@ -93,9 +104,7 @@ def main() -> None:
     window.mainloop()
 
     # End
-    if flash_thread.is_alive():
-        abort_event.set()
-        flash_thread.join()
+    abort_event.set()
 
 
 if __name__ == '__main__':
