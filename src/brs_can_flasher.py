@@ -79,14 +79,18 @@ def flash_over_can(
                     # Construct next message
                     tx_msg.arbitration_id = CAN_MSG_ID_FLASH_DATA
                     for data_idx in range(8):
-                        tx_msg.data[data_idx] = flash_content[flash_idx]
-                        flash_idx += 1
+                        if flash_idx < flash_byte_count:
+                            tx_msg.data[data_idx] = flash_content[flash_idx]
+                            flash_idx += 1
+                        else:
+                            print('Flashing exceeded flash file size -> protocol error?')
+                            return
 
                     # Send message
                     bus.send(tx_msg)
             
                 # Delay for bus reliability
-                time.sleep(0.001)
+                time.sleep(0.0001)
 
             # End
             print('Flashing ended')
