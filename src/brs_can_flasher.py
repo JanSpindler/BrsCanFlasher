@@ -9,33 +9,87 @@ def flash_over_can(
     abort_event: threading.Event,
     file_name: str
 ) -> None:
+    # Check for valid file_name
+    if file_name == '':
+        print('Cant open file with empty name')
+        return
+
+    # Start
     print('Flashing started')
 
-    flash_file = open(file_name, 'rb')
-    flash_content = flash_file.read()
-    print(len(flash_content))
-    flash_file.close()
+    # Open file
+    with open(file_name, 'rb') as flash_file:
+        flash_content: bytes = flash_file.read()
+        flash_idx: int = 0
+        flash_byte_count: int = len(flash_content)
+        print(flash_byte_count)
+        print(hex(flash_byte_count))
 
-    bus = can.Bus(channel=0, bitrate=1_000_000, interface='vector')
+        # Open can bus
+        with can.Bus(channel=0, bitrate=1_000_000, interface='vector') as bus:
+            # Define CAN message ids
+            CAN_MSG_ID_FLASH_INIT: int = 0x100
+            CAN_MSG_ID_FLASH_DATA: int = 0x101
+            CAN_MSG_ID_FLASH_ACK: int = 0x102
+            CAN_MSG_ID_FLASH_FIN: int = 0x103
 
-    tx_msg = can.Message(
-        arbitration_id=0x100, 
-        data=[0, 25, 0, 1, 3, 1, 4, 1], 
-        is_extended_id=False,
-        is_rx=False
-    )
+            # Convert flash_byte_count to can message content
+            tx_data = [0] * 8
+            for byte_idx in range(8):
+                tx_data[7 - byte_idx] = (flash_byte_count >> (8 * byte_idx)) & 0xFF
 
-    for i in range(32):
-        if abort_event.is_set():
-            print('Flashing has been aborted')
-            return
-    
-        bus.send(tx_msg)
+            # Create init message
+            tx_msg = can.Message(
+                arbitration_id=CAN_MSG_ID_FLASH_INIT,
+                data=tx_data,
+                is_extended_id=False,
+                is_rx=False
+            )
 
-        print(i)
-        time.sleep(1)
-    
-    print('Flashing ended')
+            # State variables
+            tx_ready: bool = False
+            flash_finished: bool = False
+
+            # Define can callback function
+            def on_can_rx(msg: can.Message) -> None:
+                nonlocal tx_ready
+                nonlocal flash_finished
+                msg_id: int = msg.arbitration_id
+                if msg_id == CAN_MSG_ID_FLASH_ACK:
+                    tx_ready = True
+                    return
+                elif msg_id == CAN_MSG_ID_FLASH_FIN:
+                    flash_finished = True
+                    return
+                print('No acknowledgement from controller')
+                tx_ready = False
+                return
+
+            # Create notifier
+            notifier = can.Notifier(bus=bus, listeners=[on_can_rx])
+
+            # Communication
+            bus.send(tx_msg)
+            while not flash_finished:
+                if abort_event.is_set():
+                    print('Flashing has been aborted')
+                    return
+            
+                if tx_ready:
+                    # Construct next message
+                    tx_msg.arbitration_id = CAN_MSG_ID_FLASH_DATA
+                    for data_idx in range(8):
+                        tx_msg.data[data_idx] = flash_content[flash_idx]
+                        flash_idx += 1
+
+                    # Send message
+                    bus.send(tx_msg)
+            
+                # Delay for bus reliability
+                time.sleep(0.001)
+
+            # End
+            print('Flashing ended')
 
 
 def flash_over_can1() -> None:
