@@ -19,9 +19,17 @@ def flash_over_can(
 
     # Open file
     with open(file_name, 'rb') as flash_file:
-        flash_content: bytes = flash_file.read()
-        flash_idx: int = 0
+        # Read data and size from flash file
+        flash_content = bytearray(flash_file.read())
         flash_byte_count: int = len(flash_content)
+        flash_idx: int = 0
+        
+        # Expand flash file size to a multiple of 8
+        while flash_byte_count % 8 != 0:
+            flash_content.append(0x00)
+            flash_byte_count += 1
+
+        # Print flash file size
         print(flash_byte_count)
         print(hex(flash_byte_count))
 
