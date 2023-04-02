@@ -62,13 +62,16 @@ def flash_over_can(
             def on_can_rx(msg: can.Message) -> None:
                 nonlocal tx_ready
                 nonlocal flash_finished
+
                 msg_id: int = msg.arbitration_id
+
                 if msg_id == CAN_MSG_ID_FLASH_ACK:
                     tx_ready.set()
                     return
                 elif msg_id == CAN_MSG_ID_FLASH_FIN:
                     flash_finished.set()
                     return
+
                 print('No acknowledgement from controller')
                 tx_ready = False
                 return
@@ -100,30 +103,12 @@ def flash_over_can(
                     bus.send(tx_msg)
             
                 # Delay for bus reliability
-                time.sleep(0.01)
+                time.sleep(0.0001)
 
             # End
+            notifier.remove_listener(on_can_rx)
+            notifier.stop(10.0)
             print('Flashing ended')
-
-
-def flash_over_can1() -> None:
-    with can.Bus(channel=0, bitrate=1_000_000, interface='vector') as bus:
-        tx_msg = can.Message(
-            arbitration_id=0x200, 
-            data=[0, 25, 0, 1, 3, 1, 4, 1], 
-            is_extended_id=False,
-            is_rx=False
-        )
-
-        buffered_reader = can.BufferedReader()
-        printer = can.Printer()
-
-        notifier = can.Notifier(bus=bus, listeners=[buffered_reader, printer])
-
-        while True:
-            time.sleep(2.0)
-            bus.send(tx_msg)
-            print(tx_msg)
 
 
 def main() -> None:
@@ -149,7 +134,13 @@ def main() -> None:
     # Flash button
     abort_event = threading.Event()
 
+    flash_thread = threading.Thread(
+        target=flash_over_can, 
+        args=(abort_event, '',))
+
     def on_flash_clicked() -> None:
+        nonlocal flash_thread
+
         print('Clicked flash button')
 
         file_name = fd.askopenfilename()
@@ -172,7 +163,9 @@ def main() -> None:
     window.mainloop()
 
     # End
-    abort_event.set()
+    if flash_thread.is_alive():
+        abort_event.set()
+        flash_thread.join()
 
 
 if __name__ == '__main__':
