@@ -47,8 +47,8 @@ def flash_over_can(
             )
 
             # State variables
-            tx_ready: bool = False
-            flash_finished: bool = False
+            tx_ready = threading.Event()
+            flash_finished = threading.Event()
 
             # Define can callback function
             def on_can_rx(msg: can.Message) -> None:
@@ -56,10 +56,10 @@ def flash_over_can(
                 nonlocal flash_finished
                 msg_id: int = msg.arbitration_id
                 if msg_id == CAN_MSG_ID_FLASH_ACK:
-                    tx_ready = True
+                    tx_ready.set()
                     return
                 elif msg_id == CAN_MSG_ID_FLASH_FIN:
-                    flash_finished = True
+                    flash_finished.set()
                     return
                 print('No acknowledgement from controller')
                 tx_ready = False
@@ -70,12 +70,12 @@ def flash_over_can(
 
             # Communication
             bus.send(tx_msg)
-            while not flash_finished:
+            while not flash_finished.is_set():
                 if abort_event.is_set():
                     print('Flashing has been aborted')
                     return
             
-                if tx_ready:
+                if tx_ready.is_set():
                     # Construct next message
                     tx_msg.arbitration_id = CAN_MSG_ID_FLASH_DATA
                     for data_idx in range(8):
@@ -84,13 +84,15 @@ def flash_over_can(
                             flash_idx += 1
                         else:
                             print('Flashing exceeded flash file size -> protocol error?')
+                            print(flash_idx)
                             return
+                    tx_ready.clear()
 
                     # Send message
                     bus.send(tx_msg)
             
                 # Delay for bus reliability
-                time.sleep(0.0001)
+                time.sleep(0.01)
 
             # End
             print('Flashing ended')
